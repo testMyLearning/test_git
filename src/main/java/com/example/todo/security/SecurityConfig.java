@@ -1,6 +1,6 @@
 package com.example.todo.security;
 
-import com.example.todo.security.jwt.JwtFilter;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,30 +35,29 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,JwtFilter jwtFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // ВАЖНО: отключаем сессии!
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // ВАЖНО: отключаем сессии!
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login", "/registration/**", "/css/**", "/error","/js/**", "/index.html").permitAll()
                         .requestMatchers("/v1/api/auth/**").permitAll()
+                        .requestMatchers("/v1/task/**").authenticated()
                         .requestMatchers("/admin/**", "/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/tasks", "/api/v1/tasks/**","/v1/task/**","/api/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()
                 )
-////                .formLogin(form -> form
-////                        .loginPage("/login")
-////                        .defaultSuccessUrl("/v1/task/main")
-////                        .permitAll()
-//                )
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/v1/task/main")
+                        .permitAll()
+                )
                 .logout(logout -> logout
                         .logoutSuccessUrl("/")
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
-                )
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                );
 
         return http.build();
     }
